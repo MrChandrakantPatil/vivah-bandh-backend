@@ -1,14 +1,18 @@
-import Profile from '../../models/profile.model.js';
+import Profile from '../../../models/profile.model.js';
+import { calculateAge } from '../../matches/matches.utils.js';
+import { PROFILE_ERRORS } from '../profile.errors.js';
 
-import { PROFILE_ERRORS } from './profile.errors.js';
+export const getProfileService = async (userId) => {
+  if (typeof userId !== 'string' || !userId.trim()) {
+    throw new Error(PROFILE_ERRORS.INVALID_USER_ID.code);
+  }
 
-export const profileService = async (userId) => {
   const profile = await Profile.findOne({
     userId: userId.trim(),
   }).lean();
 
   if (!profile) {
-    throw new Error(PROFILE_ERRORS.PROFILE_NOT_FOUND);
+    throw new Error(PROFILE_ERRORS.PROFILE_NOT_FOUND.code);
   }
 
   return {
@@ -17,6 +21,7 @@ export const profileService = async (userId) => {
     gender: profile.gender,
     name: profile.name,
     dob: profile.dob,
+    age: calculateAge(profile.dob),
     religion: profile.religion,
     community: profile.community,
     height: profile.height,
@@ -28,9 +33,14 @@ export const profileService = async (userId) => {
     annualIncome: profile.annualIncome,
     familyType: profile.familyType,
     familyStatus: profile.familyStatus,
+    fatherOccupation: profile.fatherOccupation,
+    motherOccupation: profile.motherOccupation,
+    brothers: profile.brothers,
+    sisters: profile.sisters,
     location: profile.location,
     partnerPreference: profile.partnerPreference,
-    profilePhoto: profile.profilePhoto,
+    profilePhotos: profile.profilePhotos,
+    primaryPhoto: profile.primaryPhoto,
     aboutMe: profile.aboutMe,
     profileCompleted: profile.profileCompleted,
     status: profile.status,
