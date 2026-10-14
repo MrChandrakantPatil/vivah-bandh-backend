@@ -32,6 +32,12 @@ const profileSchema = new mongoose.Schema(
       required: true,
     },
 
+    maritalStatus: {
+      type: String,
+      enum: ['Never Married', 'Divorced', 'Widowed', 'Separated'],
+      default: null,
+    },
+
     religion: {
       type: String,
       required: true,
@@ -44,6 +50,12 @@ const profileSchema = new mongoose.Schema(
       trim: true,
     },
 
+    motherTongue: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+
     height: {
       type: Number,
       min: 50,
@@ -52,18 +64,6 @@ const profileSchema = new mongoose.Schema(
     },
 
     color: {
-      type: String,
-      trim: true,
-      default: null,
-    },
-
-    maritalStatus: {
-      type: String,
-      enum: ['Never Married', 'Divorced', 'Widowed', 'Separated'],
-      default: null,
-    },
-
-    motherTongue: {
       type: String,
       trim: true,
       default: null,
@@ -106,24 +106,64 @@ const profileSchema = new mongoose.Schema(
       default: null,
     },
 
+    fatherOccupation: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+
+    motherOccupation: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+
+    brothers: {
+      type: Number,
+      min: 0,
+      default: null,
+    },
+
+    sisters: {
+      type: Number,
+      min: 0,
+      default: null,
+    },
+
     location: {
       country: {
         type: String,
         trim: true,
         default: null,
       },
-
       state: {
         type: String,
         trim: true,
         default: null,
       },
-
       city: {
         type: String,
         trim: true,
         default: null,
       },
+    },
+
+    aboutMe: {
+      type: String,
+      maxlength: 2000,
+      trim: true,
+      default: null,
+    },
+
+    hobbies: {
+      type: [String],
+      default: [],
+    },
+
+    lifestyle: {
+      type: String,
+      trim: true,
+      default: null,
     },
 
     partnerPreference: {
@@ -132,43 +172,40 @@ const profileSchema = new mongoose.Schema(
         min: 18,
         default: null,
       },
-
       maxAge: {
         type: Number,
         max: 100,
         default: null,
       },
-
       religion: {
         type: [String],
         default: [],
       },
-
       community: {
         type: [String],
         default: [],
       },
-
       education: {
         type: [String],
         default: [],
       },
-
       occupation: {
         type: [String],
         default: [],
       },
     },
 
-    profilePhoto: {
-      type: String,
-      default: null,
+    profilePhotos: {
+      type: [String],
+      default: [],
+      validate: {
+        validator: (photos) => photos.length <= 5,
+        message: 'A maximum of 5 profile photos is allowed.',
+      },
     },
 
-    aboutMe: {
+    primaryPhoto: {
       type: String,
-      maxlength: 2000,
-      trim: true,
       default: null,
     },
 
