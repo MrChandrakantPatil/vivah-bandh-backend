@@ -89,7 +89,7 @@ export const getShortlistsService = async (userId, filters, sortBy, search, page
   const totalPages = Math.ceil(total / pageSize);
 
   return {
-    shortlist: paginatedShortlist,
+    matches: paginatedShortlist,
     pagination: {
       page: currentPage,
       limit: pageSize,
