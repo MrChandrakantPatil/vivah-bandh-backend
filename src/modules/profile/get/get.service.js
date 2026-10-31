@@ -1,5 +1,6 @@
 import Profile from '../../../models/profile.model.js';
 import { calculateAge } from '../../matches/matches.utils.js';
+import { calculateProfilePercentage } from '../profile.utils.js';
 import { PROFILE_ERRORS } from '../profile.errors.js';
 
 export const getProfileService = async (userId) => {
@@ -14,6 +15,8 @@ export const getProfileService = async (userId) => {
   if (!profile) {
     throw new Error(PROFILE_ERRORS.PROFILE_NOT_FOUND.code);
   }
+
+  const profilePercentage = calculateProfilePercentage(profile);
 
   return {
     userId: profile.userId,
@@ -43,6 +46,7 @@ export const getProfileService = async (userId) => {
     primaryPhoto: profile.primaryPhoto,
     aboutMe: profile.aboutMe,
     profileCompleted: profile.profileCompleted,
+    profilePercentage,
     status: profile.status,
   };
 };
