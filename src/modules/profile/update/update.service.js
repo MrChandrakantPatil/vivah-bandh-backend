@@ -1,104 +1,239 @@
+import User from '../../../models/user.model.js';
 import Profile from '../../../models/profile.model.js';
+
 import { calculateAge } from '../../matches/matches.utils.js';
 import { PROFILE_ERRORS } from '../profile.errors.js';
+import { calculateProfilePercentage } from '../profile.utils.js';
 
-const ALLOWED_PROFILE_FIELDS = [
-  'profileFor',
-  'gender',
-  'name',
-  'dob',
-  'maritalStatus',
+// ==========================================
+// Allowed Profile Fields
+// ==========================================
 
-  'religion',
-  'community',
-  'motherTongue',
-  'height',
-  'color',
+const ALLOWED_PROFILE_FIELDS = {
+  profileFor: true,
+  gender: true,
+  name: true,
+  dob: true,
+  height: true,
+  complexion: true,
+  maritalStatus: true,
+  disability: true,
+  healthInformation: true,
+  bloodGroup: true,
 
-  'education',
-  'occupation',
-  'annualIncome',
+  location: {
+    country: true,
+    state: true,
+    city: true,
+    zip: true,
+  },
 
-  'familyType',
-  'familyStatus',
-  'fatherOccupation',
-  'motherOccupation',
-  'brothers',
-  'sisters',
+  religiousBackground: {
+    religion: true,
+    community: true,
+    subCommunity: true,
+    motherTongue: true,
+    gothra: true,
+  },
 
-  'location',
+  education: {
+    highestQualification: true,
+    educationField: true,
+    collegeName: true,
+  },
 
-  'aboutMe',
-  'hobbies',
-  'lifestyle',
+  career: {
+    workingSector: true,
+    profession: true,
+    employer: true,
+    annualIncome: true,
+  },
 
-  'partnerPreference',
+  astroDetails: {
+    countryOfBirth: true,
+    stateOfBirth: true,
+    cityOfBirth: true,
+    timeOfBirth: true,
+    manglik: true,
+  },
 
-  'profilePhotos',
-  'primaryPhoto',
-];
+  familyDetails: {
+    location: {
+      country: true,
+      state: true,
+      city: true,
+      zip: true,
+    },
+    financialStatus: true,
+    fatherDetails: true,
+    motherDetails: true,
+    brothers: true,
+    sisters: true,
+  },
+
+  lifestyle: {
+    diet: true,
+  },
+
+  hobbies: true,
+
+  partnerPreferences: {
+    basicDetails: {
+      minAge: true,
+      maxAge: true,
+      minHeight: true,
+      maxHeight: true,
+      maritalStatus: true,
+      profileWithChildren: true,
+    },
+
+    religion: {
+      religion: true,
+      community: true,
+      subCommunity: true,
+      motherTongue: true,
+    },
+
+    location: {
+      country: true,
+      state: true,
+      city: true,
+    },
+
+    educationAndCareer: {
+      qualification: true,
+      workingSector: true,
+      profession: true,
+      annualIncome: true,
+    },
+
+    other: {
+      profileManagedBy: true,
+      diet: true,
+    },
+  },
+
+  aboutMe: true,
+  profilePhotos: true,
+  primaryPhoto: true,
+};
+
+// ==========================================
+// Apply Allowed Updates
+// ==========================================
+
+const applyAllowedUpdates = (document, payload, allowedFields, parentPath = '') => {
+  let updated = false;
+
+  for (const [field, value] of Object.entries(payload)) {
+    if (!Object.hasOwn(allowedFields, field)) {
+      continue;
+    }
+
+    const currentPath = parentPath ? `${parentPath}.${field}` : field;
+
+    const allowedValue = allowedFields[field];
+
+    if (
+      allowedValue !== true &&
+      value !== null &&
+      typeof value === 'object' &&
+      !Array.isArray(value)
+    ) {
+      updated = applyAllowedUpdates(document, value, allowedValue, currentPath) || updated;
+
+      continue;
+    }
+
+    document.set(currentPath, value);
+
+    updated = true;
+  }
+
+  return updated;
+};
+
+// ==========================================
+// Update Profile Service
+// ==========================================
 
 export const updateProfileService = async (userId, payload) => {
   if (typeof userId !== 'string' || !userId.trim()) {
     throw new Error(PROFILE_ERRORS.INVALID_USER_ID.code);
   }
 
-  console.log('Payload :-', payload);
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw new Error(PROFILE_ERRORS.NO_UPDATABLE_FIELDS.code);
+  }
 
-  const userProfileId = userId.trim();
+  const user = await User.findOne({
+    userId: userId.trim(),
+  }).select('_id');
+
+  if (!user) {
+    throw new Error(PROFILE_ERRORS.PROFILE_NOT_FOUND.code);
+  }
 
   const profile = await Profile.findOne({
-    userId: userProfileId,
+    createdByUserId: user._id,
   });
 
   if (!profile) {
     throw new Error(PROFILE_ERRORS.PROFILE_NOT_FOUND.code);
   }
 
-  const updates = {};
+  const hasUpdates = applyAllowedUpdates(profile, payload, ALLOWED_PROFILE_FIELDS);
 
-  for (const field of ALLOWED_PROFILE_FIELDS) {
-    if (Object.hasOwn(payload, field)) {
-      updates[field] = payload[field];
-    }
-  }
-
-  if (Object.keys(updates).length === 0) {
+  if (!hasUpdates) {
     throw new Error(PROFILE_ERRORS.NO_UPDATABLE_FIELDS.code);
   }
 
-  Object.assign(profile, updates);
-
   const updatedProfile = await profile.save();
 
+  const profilePercentage = calculateProfilePercentage(updatedProfile);
+
   return {
-    userId: updatedProfile.userId,
+    profileId: updatedProfile.profileId,
+
     profileFor: updatedProfile.profileFor,
     gender: updatedProfile.gender,
     name: updatedProfile.name,
     dob: updatedProfile.dob,
-    age: calculateAge(updatedProfile.dob),
-    religion: updatedProfile.religion,
-    community: updatedProfile.community,
+    age: updatedProfile.dob ? calculateAge(updatedProfile.dob) : null,
     height: updatedProfile.height,
-    color: updatedProfile.color,
+    diet: updatedProfile.diet,
     maritalStatus: updatedProfile.maritalStatus,
-    motherTongue: updatedProfile.motherTongue,
-    education: updatedProfile.education,
-    occupation: updatedProfile.occupation,
-    annualIncome: updatedProfile.annualIncome,
-    familyType: updatedProfile.familyType,
-    familyStatus: updatedProfile.familyStatus,
-    fatherOccupation: updatedProfile.fatherOccupation,
-    motherOccupation: updatedProfile.motherOccupation,
-    brothers: updatedProfile.brothers,
-    sisters: updatedProfile.sisters,
+
     location: updatedProfile.location,
-    partnerPreference: updatedProfile.partnerPreference,
+
+    disability: updatedProfile.disability,
+    healthInformation: updatedProfile.healthInformation,
+    bloodGroup: updatedProfile.bloodGroup,
+
+    religiousBackground: updatedProfile.religiousBackground,
+    astroDetails: profile.astroDetails,
+
+    education: updatedProfile.education,
+    career: updatedProfile.career,
+
+    horoscope: updatedProfile.horoscope,
+    familyDetails: updatedProfile.familyDetails,
+    lifestyle: updatedProfile.lifestyle,
+
+    hobbies: updatedProfile.hobbies,
+    partnerPreferences: updatedProfile.partnerPreferences,
+
+    aboutMe: updatedProfile.aboutMe,
     profilePhotos: updatedProfile.profilePhotos,
     primaryPhoto: updatedProfile.primaryPhoto,
-    aboutMe: updatedProfile.aboutMe,
+
     profileCompleted: updatedProfile.profileCompleted,
+    profilePercentage,
     status: updatedProfile.status,
+
+    publishedAt: updatedProfile.publishedAt,
+    lastActiveAt: updatedProfile.lastActiveAt,
+    createdAt: updatedProfile.createdAt,
+    updatedAt: updatedProfile.updatedAt,
   };
 };

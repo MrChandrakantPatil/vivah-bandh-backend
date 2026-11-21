@@ -26,10 +26,7 @@ export const getProfileDetailsService = async (currentUserId, candidateUserId) =
     throw new Error(PROFILE_ERRORS.PROFILE_NOT_FOUND.code);
   }
 
-  const matchPercentage = calculateMatchScore(
-    currentProfile,
-    candidateProfile,
-  );
+  const matchPercentage = calculateMatchScore(currentProfile, candidateProfile);
 
   return {
     // Basic identification
@@ -40,13 +37,11 @@ export const getProfileDetailsService = async (currentUserId, candidateUserId) =
 
     // Personal details
     dob: candidateProfile.dob,
-    age: candidateProfile.dob
-      ? calculateAge(candidateProfile.dob)
-      : null,
+    age: candidateProfile.dob ? calculateAge(candidateProfile.dob) : null,
     religion: candidateProfile.religion,
     community: candidateProfile.community,
     height: candidateProfile.height,
-    color: candidateProfile.color,
+    complexion: candidateProfile.complexion,
     maritalStatus: candidateProfile.maritalStatus,
     motherTongue: candidateProfile.motherTongue,
 
