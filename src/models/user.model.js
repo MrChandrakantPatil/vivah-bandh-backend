@@ -1,19 +1,21 @@
 import mongoose from 'mongoose';
 
+// ==========================================
+// User Schema
+// ==========================================
+
 const userSchema = new mongoose.Schema(
   {
     userId: {
       type: String,
       required: true,
-      unique: true,
-      index: true,
+      trim: true,
+      immutable: true,
     },
 
     email: {
       type: String,
       required: true,
-      unique: true,
-      index: true,
       lowercase: true,
       trim: true,
     },
@@ -21,14 +23,13 @@ const userSchema = new mongoose.Schema(
     mobile: {
       type: String,
       required: true,
-      unique: true,
-      index: true,
       trim: true,
     },
 
     passwordHash: {
       type: String,
       required: true,
+      select: false,
     },
 
     role: {
@@ -39,8 +40,8 @@ const userSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ['pending_verification', 'active', 'inactive', 'blocked', 'deleted'],
-      default: 'pending_verification',
+      enum: ['verification_pending', 'active', 'inactive', 'blocked', 'deleted'],
+      default: 'verification_pending',
     },
 
     mobileVerified: {
@@ -58,13 +59,20 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
 
+    lastActiveAt: {
+      type: Date,
+      default: null,
+    },
+
     loginCount: {
       type: Number,
+      min: 0,
       default: 0,
     },
 
     failedLoginAttempts: {
       type: Number,
+      min: 0,
       default: 0,
     },
 
@@ -77,10 +85,33 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
   }
 );
 
-export default mongoose.model('User', userSchema);
+// ==========================================
+// Indexes
+// ==========================================
+
+userSchema.index({ userId: 1 }, { unique: true, name: 'uq_user_user_id' });
+
+userSchema.index({ email: 1 }, { unique: true, name: 'uq_user_email' });
+
+userSchema.index({ mobile: 1 }, { unique: true, name: 'uq_user_mobile' });
+
+userSchema.index({ status: 1, lastActiveAt: -1 }, { name: 'idx_user_status_activity' });
+
+// ==========================================
+// Model
+// ==========================================
+
+const User = mongoose.models.User || mongoose.model('User', userSchema);
+
+export default User;

@@ -24,6 +24,13 @@ export const logoutController = async (req, res) => {
       path: '/api/auth',
     });
 
+    res.clearCookie(AUTH_CONFIG.DEVICE_ID_COOKIE_NAME, {
+      httpOnly: true,
+      secure: AUTH_CONFIG.IS_COOKIE_SECURE,
+      sameSite: 'lax',
+      path: '/',
+    });
+
     return res.status(200).json({
       success: true,
       message: 'Logged out successfully',

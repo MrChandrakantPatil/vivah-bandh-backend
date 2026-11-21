@@ -22,26 +22,26 @@ export const registerUserService = async ({
   mobile,
   password,
 }) => {
+  email = email.trim().toLowerCase();
+
+  const mobileDigits = mobile.replace(/\D/g, '');
+  mobile = `+91${mobileDigits}`;
+
   const session = await mongoose.startSession();
 
   try {
-    email = email.trim().toLowerCase();
-    mobile = mobile.trim();
-
     const existingUser = await User.findOne({
       $or: [{ email }, { mobile }],
     });
 
     if (existingUser) {
       if (existingUser.email === email) {
-        logger.warn({ email }, 'Registration rejected: email already exists');
-
+        logger.warn('Registration rejected: email already exists');
         throw new Error(REGISTER_ERRORS.EMAIL_EXISTS);
       }
 
       if (existingUser.mobile === mobile) {
-        logger.warn({ mobile }, 'Registration rejected: mobile already exists');
-
+        logger.warn('Registration rejected: mobile already exists');
         throw new Error(REGISTER_ERRORS.MOBILE_EXISTS);
       }
     }
@@ -51,10 +51,10 @@ export const registerUserService = async ({
     const result = await session.withTransaction(async () => {
       const sequence = await getNextUserSequence(session);
 
-      const userId = `U${String(sequence).padStart(2, '0')}`;
+      const profileId = `VB${String(sequence).padStart(6, '0')}`;
 
       const user = new User({
-        userId,
+        userId: profileId,
         email,
         mobile,
         passwordHash,
@@ -63,49 +63,41 @@ export const registerUserService = async ({
       await user.save({ session });
 
       const profile = new Profile({
-        userId,
+        profileId,
+        createdByUserId: user._id,
         profileFor,
         gender,
         name,
         dob,
-        religion,
-        community,
+        religiousBackground: {
+          religion,
+          community,
+        },
       });
 
       await profile.save({ session });
 
-      return {
-        user,
-        profile,
-      };
+      return { user, profile };
     });
 
-    logger.info(
-      {
-        userId: result.user.userId,
-      },
-      'User registration successful'
-    );
+    logger.info({ profileId: result.profile.profileId }, 'User registration successful');
 
     return {
-      userId: result.user.userId,
+      profileId: result.profile.profileId,
       email: result.user.email,
       mobile: result.user.mobile,
       role: result.user.role,
+      status: result.user.status,
     };
   } catch (error) {
     if (error?.code === 11000) {
       const field = Object.keys(error.keyPattern || {})[0];
 
       if (field === 'email') {
-        logger.warn({ email }, 'Registration rejected: email already exists');
-
         throw new Error(REGISTER_ERRORS.EMAIL_EXISTS, { cause: error });
       }
 
       if (field === 'mobile') {
-        logger.warn({ mobile }, 'Registration rejected: mobile already exists');
-
         throw new Error(REGISTER_ERRORS.MOBILE_EXISTS, { cause: error });
       }
     }
