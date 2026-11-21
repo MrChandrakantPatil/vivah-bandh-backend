@@ -1,4 +1,5 @@
 import Profile from '../../../../models/profile.model.js';
+import User from '../../../../models/user.model.js';
 import { deletePhotoObject } from '../../../../infrastructure/s3/s3.service.js';
 
 export async function deleteProfilePhoto(userId, photoKey) {
@@ -9,7 +10,8 @@ export async function deleteProfilePhoto(userId, photoKey) {
   }
 
   const normalizedUserId = userId.trim();
-  const profile = await Profile.findOne({ userId: normalizedUserId });
+  const user = await User.findOne({ userId: normalizedUserId }).select('_id');
+  const profile = user && (await Profile.findOne({ createdByUserId: user._id }));
 
   if (!profile) {
     const error = new Error('Profile not found');

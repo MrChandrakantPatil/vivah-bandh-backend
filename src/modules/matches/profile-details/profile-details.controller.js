@@ -4,10 +4,7 @@ import { PROFILE_ERRORS } from '../../profile/profile.errors.js';
 
 export const getProfileDetailsController = async (req, res) => {
   try {
-    const response = await getProfileDetailsService(
-        req.userId,
-        req.params.userId,
-    );
+    const response = await getProfileDetailsService(req.userId, req.params.userId);
 
     return res.status(200).json({
       success: true,
